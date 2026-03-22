@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🛰️ Thread GPS Tracking</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'Segoe UI', sans-serif; background: #1a1f2e; color: #e0e6f0; min-height: 100vh; }
+
+header {
+  background: linear-gradient(90deg, #1a237e, #1565c0);
+  padding: 14px 24px; display: flex; align-items: center; gap: 12px;
+  box-shadow: 0 2px 16px rgba(0,0,0,0.5);
+}
+header h1 { font-size: 1.2rem; }
+.badge { margin-left: auto; background: rgba(255,255,255,0.12); padding: 4px 12px; border-radius: 20px; font-size: 0.78rem; display: flex; align-items: center; gap: 6px; }
+
+nav { display: flex; background: #222840; border-bottom: 1px solid #2d3555; }
+nav button { flex: 1; padding: 13px; background: none; border: none; color: #8892b0; cursor: pointer; font-size: 0.88rem; border-bottom: 3px solid transparent; transition: all .2s; }
+nav button.active { color: #4fc3f7; border-bottom-color: #4fc3f7; background: rgba(79,195,247,.07); }
+
+.page { display: none; } .page.active { display: block; }
+.container { max-width: 1100px; margin: 0 auto; padding: 20px; }
+
+.card { background: #222840; border: 1px solid #2d3555; border-radius: 10px; padding: 18px; margin-bottom: 14px; }
+.card h2 { font-size: 0.82rem; color: #8892b0; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 14px; }
+
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.grid3 { display: grid; grid-template-columns: repeat(3,1fr); gap: 14px; }
+@media(max-width:700px){ .grid2,.grid3{ grid-template-columns:1fr; } }
+
+label { display: block; margin-bottom: 5px; color: #8892b0; font-size: 0.82rem; }
+input, select { width: 100%; padding: 9px 12px; background: #1a1f2e; border: 1px solid #2d3555; border-radius: 7px; color: #e0e6f0; font-size: 0.88rem; }
+input:focus, select:focus { outline: none; border-color: #4fc3f7; }
+.fg { margin-bottom: 13px; }
+
+.btn { padding: 9px 18px; border: none; border-radius: 7px; cursor: pointer; font-size: 0.88rem; font-weight: 600; transition: .2s; }
+.btn-blue { background: #1565c0; color: #fff; } .btn-blue:hover { background: #0d47a1; }
+.btn-green { background: #2e7d32; color: #fff; } .btn-green:hover { background: #1b5e20; }
+.btn-red { background: #c62828; color: #fff; } .btn-red:hover { background: #b71c1c; }
+.btn-gray { background: #37415a; color: #e0e6f0; }
+
+.metric { background: #1a1f2e; border: 1px solid #2d3555; border-radius: 9px; padding: 14px; text-align: center; }
+.metric .val { font-size: 1.9rem; font-weight: 700; margin: 6px 0 3px; }
+.metric .lbl { font-size: 0.75rem; color: #8892b0; text-transform: uppercase; letter-spacing:.5px; }
+.metric .unit { font-size: 0.82rem; color: #8892b0; }
+
+.bar-wrap { height: 7px; background: #2d3555; border-radius: 4px; overflow: hidden; margin-top: 7px; }
+.bar-fill { height: 100%; border-radius: 4px; transition: width .6s; }
+
+#map { height: 420px; border-radius: 10px; border: 1px solid #2d3555; margin-bottom: 14px; }
+
+.log { background: #111827; border: 1px solid #2d3555; border-radius: 7px; padding: 10px; height: 160px; overflow-y: auto; font-family: monospace; font-size: 0.78rem; }
+.lg { padding: 2px 0; }
+.lg.g { color: #4fc3f7; } .lg.b { color: #81c784; } .lg.t { color: #ffb74d; } .lg.e { color: #ef9a9a; }
+
+.runner-item { display: flex; align-items: center; gap: 10px; padding: 10px; background: #1a1f2e; border-radius: 8px; margin-bottom: 7px; cursor: pointer; border: 1px solid transparent; transition: .2s; }
+.runner-item:hover { border-color: #4fc3f7; }
+.runner-item.sel { border-color: #4fc3f7; background: rgba(79,195,247,.06); }
+.avatar { width: 36px; height: 36px; background: linear-gradient(135deg,#1565c0,#7b1fa2); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: .9rem; }
+
+.dot { width: 9px; height: 9px; border-radius: 50%; display: inline-block; margin-right: 5px; }
+.dot.g { background: #4caf50; animation: pulse 2s infinite; }
+.dot.r { background: #f44336; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
+
+.toast { position: fixed; bottom: 20px; right: 20px; padding: 10px 18px; border-radius: 8px; font-size: .88rem; z-index: 9999; display: none; box-shadow: 0 4px 16px rgba(0,0,0,.4); }
+.toast.show { display: block; }
+.toast.ok { background: #2e7d32; color: #fff; }
+.toast.err { background: #c62828; color: #fff; }
+
+.ipv6 { font-family: monospace; color: #4fc3f7; font-size: .82rem; }
+table { width: 100%; border-collapse: collapse; font-size: .84rem; }
+th, td { padding: 8px 10px; text-align: left; border-bottom: 1px solid #2d3555; }
+th { color: #8892b0; font-weight: 500; }
+
+pre { background: #111827; border-radius: 7px; padding: 10px; font-size: .78rem; color: #81c784; max-height: 180px; overflow: auto; margin-top: 10px; white-space: pre-wrap; }
+</style>
+</head>
+<body>
+
+<header>
+  <div style="font-size:1.4rem">🛰️</div>
+  <div>
+    <h1>Thread GPS Tracking Platform</h1>
+    <div style="font-size:.72rem;color:rgba(255,255,255,.55)"></div>
+  </div>
+  <div class="badge">
+    <span class="dot" id="apiDot" style="background:#f44336"></span>
+    <span id="apiTxt">API hors ligne</span>
+  </div>
+</header>
+
+<nav>
+  <button class="active" onclick="nav('register',this)">📝 Enregistrement des coureurs</button>
+  <button onclick="nav('tracking',this)">🗺️ Suivi des coureurs et des logs</button>
+  <button onclick="nav('network',this)">📡 Test de l’application et affichage du réseau</button>
+</nav>
+
+<!-- PAGE 1 : ENREGISTREMENT -->
+<div class="page active" id="page-register">
+<div class="container">
+  <div class="grid2">
+    <div class="card">
+      <h2>👤 Nouveau Coureur</h2>
+      <div class="fg"><label>Nom complet</label><input id="rName" placeholder="Ayoub EL mouwahid"/></div>
+      <div class="fg"><label>Email</label><input id="rEmail" type="email" placeholder="elmouwahid2001@gmail.com"/></div>
+      <button class="btn btn-blue" onclick="createRunner()">➕ Enregistrer</button>
+    </div>
+    <div class="card">
+      <h2>📋 Coureurs enregistrés</h2>
+      <div id="runnerList"><div style="color:#8892b0;text-align:center;padding:16px;">Chargement...</div></div>
+    </div>
+  </div>
+
+  <div class="card" id="sessionCard" style="display:none">
+    <h2>🚀 Démarrer une session pour : <span id="selName" style="color:#4fc3f7"></span></h2>
+    <p style="color:#8892b0;font-size:.85rem;margin-bottom:14px;">
+      Les devices Thread (GPS fd00:db8::10, Batterie ::11, Température ::12) seront interrogés via CoAP toutes les 4 secondes.
+    </p>
+    <button class="btn btn-green" onclick="startSession()">▶️ Démarrer le Tracking</button>
+  </div>
+</div>
+</div>
+
+<!-- PAGE 2 : TRACKING -->
+<div class="page" id="page-tracking">
+<div class="container">
+  <div class="grid3" style="margin-bottom:14px;">
+    <div class="metric">
+      <div class="lbl">📍 Position GPS</div>
+      <div class="val" id="mLat" style="color:#4fc3f7;font-size:1rem;margin-top:8px;">--</div>
+      <div class="val" id="mLon" style="color:#4fc3f7;font-size:1rem;margin-bottom:4px;">--</div>
+    </div>
+    <div class="metric">
+      <div class="lbl">📏 Distance parcourue</div>
+      <div class="val" id="mDist" style="color:#4caf50;">0</div>
+      <div class="unit">mètres</div>
+    </div>
+    <div class="metric">
+      <div class="lbl">⏱️ Session</div>
+      <div class="val" id="mSession" style="color:#ce93d8;font-size:1.1rem;">--</div>
+      <div class="unit" id="mSessionTime"></div>
+    </div>
+  </div>
+
+  <div class="grid2" style="margin-bottom:14px;">
+    <div class="metric">
+      <div class="lbl">🔋 Batterie</div>
+      <div class="val" id="mBatt" style="color:#4caf50;">--</div>
+      <div class="unit">%</div>
+      <div class="bar-wrap"><div class="bar-fill" id="battBar" style="width:0%;background:#4caf50"></div></div>
+    </div>
+    <div class="metric">
+      <div class="lbl">🌡️ Température</div>
+      <div class="val" id="mTemp" style="color:#ff8a65;">--</div>
+      <div class="unit">°C</div>
+    </div>
+  </div>
+
+  <div id="map"></div>
+    <div class="card">
+    <h2>📡 Suivi des logs</h2>
+    <div class="log" id="logPanel"><div class="lg" style="color:#8892b0">Session n'est pas démarer...</div></div>
+    <div style="display:flex;gap:8px;margin-top:10px;">
+      <button class="btn btn-gray" onclick="clearLog()">🗑️ Effacer</button>
+      <button class="btn btn-red" onclick="stopSession()">⛔ Arrêter session</button>
+    </div>
+  </div>
+
+  
+</div>
+</div>
+
+<!-- PAGE 3 : RÉSEAU THREAD -->
+<div class="page" id="page-network">
+<div class="container">
+  <div class="card">
+    <h2>📡 Réseau Thread - Topologie IPv6</h2>
+    <div style="background:#111827;border-radius:8px;padding:14px;font-family:monospace;font-size:.82rem;margin-bottom:16px;line-height:2;">
+    <table>
+      <thead><tr><th>Rôle</th><th>Type</th><th>Adresse IPv6</th><th>Ressource CoAP</th><th>Statut</th></tr></thead>
+      <tbody>
+        <tr><td>Leader</td><td>Coordinateur</td><td class="ipv6">fd00:db8::1</td><td>—</td><td><span class="dot g"></span>Actif</td></tr>
+        <tr><td>Router</td><td>Relais</td><td class="ipv6">fd00:db8::2</td><td>—</td><td><span class="dot g"></span>Actif</td></tr>
+        <tr><td>End Device</td><td>GPS</td><td class="ipv6">fd00:db8::10</td><td class="ipv6">coap://[fd00:db8::10]:5683/gps</td><td><span class="dot g"></span>Actif</td></tr>
+        <tr><td>End Device</td><td>Batterie</td><td class="ipv6">fd00:db8::11</td><td class="ipv6">coap://[fd00:db8::11]:5683/battery</td><td><span class="dot g"></span>Actif</td></tr>
+        <tr><td>End Device</td><td>Température</td><td class="ipv6">fd00:db8::12</td><td class="ipv6">coap://[fd00:db8::12]:5683/temperature</td><td><span class="dot g"></span>Actif</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="grid2">
+       <div style="font-family: monospace; white-space: pre; background:#111827; padding:8px; border-radius:4px;">
+<div style="color:#81c784;">                [LEADER]   fd00:db8::1                 </div>
+<div style="color:#8892b0;">                    │                                  </div>
+<div style="color:#ffb74d;">                 [ROUTER]   fd00:db8::2                </div>
+<div style="color:#8892b0;">        ┌───────────┼─────────────┐                    </div>
+<div style="color:#ce93d8;">  [GPS ::10]   [BATT ::11]   [TEMP ::12]               </div>
+<div style="color:#8892b0;">                End Devices                            </div>
+</div>
+    </div>
+    <div class="card">
+      <h2> Les données sont valide ✅</h2>
+      <div style="font-size:.84rem;line-height:2.2;">
+        <div>📍 GPS Latitude : [-90, 90]°</div>
+        <div>📍 GPS Longitude : [-180, 180]°</div>
+        <div>🔋 Batterie : [0, 100] %</div>
+        <div>🌡️ Température : [-40, 40] °C</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>🧪 Tester l'API</h2>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+      <button class="btn btn-blue" onclick="testApi('/health')">GET /health</button>
+      <button class="btn btn-blue" onclick="testApi('/api/runners')">GET /api/runners</button>
+      <button class="btn btn-blue" onclick="testApi('/api/sessions')">GET /api/sessions</button>
+      <button class="btn btn-blue" onclick="testApi('/api/network')">GET /api/network (Thread IPv6)</button>
+    </div>
+    <pre id="apiOut">— cliquez sur un bouton —</pre>
+  </div>
+</div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const API = 'http://localhost:8000';
+let map, marker, polyline, routePts = [];
+let selectedRunner = null;
+let activeSession = null;
+let pollInterval = null;
+let sessionStart = null;
+
+// ── Navigation ──────────────────────────────────────────
+function nav(name, btn) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+  btn.classList.add('active');
+  if (name === 'tracking' && !map) initMap();
+}
+
+// ── Health check ────────────────────────────────────────
+async function checkHealth() {
+  try {
+    const r = await fetch(`${API}/health`);
+    const d = await r.json();
+    document.getElementById('apiDot').style.background = '#4caf50';
+    document.getElementById('apiTxt').textContent = `API connectée ${d.mqtt_connected ? '✅' : '⚠️'}`;
+  } catch {
+    document.getElementById('apiDot').style.background = '#f44336';
+    document.getElementById('apiTxt').textContent = 'API hors ligne';
+  }
+}
+setInterval(checkHealth, 5000);
+checkHealth();
+
+// ── Map ─────────────────────────────────────────────────
+function initMap() {
+  map = L.map('map').setView([48.2973, 4.0744], 14);
+  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap'
+  }).addTo(map);
+  polyline = L.polyline([], { color: '#1565c0', weight: 4, opacity: .85 }).addTo(map);
+  const icon = L.divIcon({
+    html: '<div style="width:18px;height:18px;background:#f44336;border-radius:50%;border:3px solid #fff;box-shadow:0 2px 8px rgba(0,0,0,.5)"></div>',
+    iconSize: [18,18], iconAnchor: [9,9]
+  });
+  marker = L.marker([48.2973, 4.0744], { icon }).addTo(map);
+}
+
+function updateMap(lat, lon) {
+  marker.setLatLng([lat, lon]);
+  routePts.push([lat, lon]);
+  polyline.setLatLngs(routePts);
+  map.setView([lat, lon]);
+}
+
+// ── Runners ─────────────────────────────────────────────
+async function loadRunners() {
+  try {
+    const r = await fetch(`${API}/api/runners`);
+    const list = await r.json();
+    const el = document.getElementById('runnerList');
+    if (!list.length) {
+      el.innerHTML = '<div style="color:#8892b0;text-align:center;padding:14px;">Aucun coureur</div>';
+      return;
+    }
+    el.innerHTML = list.map(r => `
+      <div class="runner-item ${selectedRunner?.id === r.id ? 'sel' : ''}" onclick="selectRunner(${r.id},'${r.name}')">
+        <div class="avatar">${r.name[0].toUpperCase()}</div>
+        <div>
+          <div style="font-weight:600">${r.name}</div>
+          <div style="font-size:.78rem;color:#8892b0">${r.email}</div>
+        </div>
+        <div style="margin-left:auto;color:#8892b0;font-size:.75rem">#${r.id}</div>
+      </div>`).join('');
+  } catch { }
+}
+
+async function createRunner() {
+  const name = document.getElementById('rName').value.trim();
+  const email = document.getElementById('rEmail').value.trim();
+  if (!name || !email) { toast('Remplissez tous les champs', 'err'); return; }
+  try {
+    const r = await fetch(`${API}/api/runners`, {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ name, email })
+    });
+    if (r.ok) {
+      document.getElementById('rName').value = '';
+      document.getElementById('rEmail').value = '';
+      toast(`✅ ${name} enregistré !`, 'ok');
+      loadRunners();
+    } else {
+      const d = await r.json();
+      toast(d.detail || 'Erreur', 'err');
+    }
+  } catch { toast('Backend inaccessible', 'err'); }
+}
+
+function selectRunner(id, name) {
+  selectedRunner = { id, name };
+  document.getElementById('selName').textContent = name;
+  document.getElementById('sessionCard').style.display = 'block';
+  loadRunners();
+}
+
+// ── Sessions ────────────────────────────────────────────
+async function startSession() {
+  if (!selectedRunner) { toast('Sélectionnez un coureur', 'err'); return; }
+  try {
+    const r = await fetch(`${API}/api/sessions`, {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ runner_id: selectedRunner.id })
+    });
+    const d = await r.json();
+    if (r.ok) {
+      activeSession = d.id;
+      sessionStart = new Date();
+      routePts = [];
+      toast(`🚀 Session #${d.id} démarrée !`, 'ok');
+      // Basculer sur tracking
+      document.querySelectorAll('nav button')[1].click();
+      document.getElementById('mSession').textContent = '#' + d.id;
+      // Polling CoAP toutes les 4s
+      poll();
+      pollInterval = setInterval(poll, 4000);
+      // Timer session
+      setInterval(() => {
+        if (!sessionStart) return;
+        const s = Math.floor((Date.now() - sessionStart) / 1000);
+        const m = String(Math.floor(s/60)).padStart(2,'0');
+        const sc = String(s % 60).padStart(2,'0');
+        document.getElementById('mSessionTime').textContent = `${m}:${sc}`;
+      }, 1000);
+    } else { toast(d.detail || 'Erreur', 'err'); }
+  } catch { toast('Backend inaccessible', 'err'); }
+}
+
+async function stopSession() {
+  if (!activeSession) { toast('Aucune session active', 'err'); return; }
+  clearInterval(pollInterval);
+  pollInterval = null;
+  await fetch(`${API}/api/sessions/${activeSession}/stop`, { method: 'PATCH' });
+  toast('Session arrêtée', 'ok');
+  activeSession = null;
+  sessionStart = null;
+}
+
+// ── CoAP Poll (simule Flux 2 + 3) ───────────────────────
+async function poll() {
+  if (!activeSession) return;
+  try {
+    const r = await fetch(`${API}/api/coap/poll/${activeSession}`, { method: 'POST' });
+    const d = await r.json();
+    if (!r.ok) return;
+
+    const cr = d.coap_responses;
+
+    // GPS
+    if (cr.gps) {
+      const g = cr.gps;
+      document.getElementById('mLat').textContent = g.lat.toFixed(6) + '°';
+      document.getElementById('mLon').textContent = g.lon.toFixed(6) + '°';
+      if (map) updateMap(g.lat, g.lon);
+      addLog(`📍 CoAP GPS [${g.device_ipv6}] → lat=${g.lat}, lon=${g.lon}`, 'g');
+    }
+
+    // Batterie
+    if (cr.battery) {
+      const v = cr.battery.value;
+      document.getElementById('mBatt').textContent = v;
+      document.getElementById('battBar').style.width = v + '%';
+      const c = v < 20 ? '#f44336' : v < 40 ? '#ff9800' : '#4caf50';
+      document.getElementById('battBar').style.background = c;
+      document.getElementById('mBatt').style.color = c;
+      addLog(`🔋 CoAP Batterie [${cr.battery.device_ipv6}] → ${v}%`, 'b');
+    }
+
+    // Température
+    if (cr.temperature) {
+      const v = cr.temperature.value;
+      document.getElementById('mTemp').textContent = v;
+      addLog(`🌡️ CoAP Temp [${cr.temperature.device_ipv6}] → ${v}°C`, 't');
+    }
+
+    // Distance totale
+    // variable globale (à mettre en haut de ton script)
+    let displayedDistance = 0;
+ 
+    // Distance totale
+    const sr = await fetch(`${API}/api/sessions/${activeSession}`);
+    const sd = await sr.json();
+
+    let target = sd.total_distance;
+
+    // interpolation douce
+    displayedDistance += (target - displayedDistance) * 0.1;
+
+    // affichage
+    document.getElementById('mDist').textContent = Math.round(displayedDistance);
+    // const sr = await fetch(`${API}/api/sessions/${activeSession}`);
+    // const sd = await sr.json();
+    // document.getElementById('mDist').textContent = Math.round(sd.total_distance);
+    
+
+  } catch(e) {
+    addLog(`⚠️ Erreur poll: ${e.message}`, 'e');
+  }
+}
+
+// ── Log ─────────────────────────────────────────────────
+function addLog(msg, type) {
+  const p = document.getElementById('logPanel');
+  const t = new Date().toLocaleTimeString();
+  const d = document.createElement('div');
+  d.className = `lg ${type}`;
+  d.textContent = `[${t}] ${msg}`;
+  p.appendChild(d);
+  p.scrollTop = p.scrollHeight;
+  while (p.children.length > 80) p.removeChild(p.firstChild);
+}
+function clearLog() { document.getElementById('logPanel').innerHTML = ''; }
+
+// ── API test ────────────────────────────────────────────
+async function testApi(path) {
+  try {
+    const r = await fetch(`${API}${path}`);
+    const d = await r.json();
+    document.getElementById('apiOut').textContent = JSON.stringify(d, null, 2);
+  } catch(e) {
+    document.getElementById('apiOut').textContent = 'Erreur: ' + e.message;
+  }
+}
+
+// ── Toast ───────────────────────────────────────────────
+function toast(msg, type) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.className = `toast show ${type}`;
+  setTimeout(() => el.classList.remove('show'), 3000);
+}
+
+// Init
+loadRunners();
+setInterval(loadRunners, 8000);
+</script>
+</body>
+</html>

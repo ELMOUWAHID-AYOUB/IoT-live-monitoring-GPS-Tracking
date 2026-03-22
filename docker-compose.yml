@@ -1,0 +1,171 @@
+version: '3.8'
+
+services:
+
+  postgres:
+    image: postgres:15-alpine
+    container_name: gps_postgres
+    environment:
+      POSTGRES_DB: gps_tracking
+      POSTGRES_USER: tracker
+      POSTGRES_PASSWORD: tracker123
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U tracker -d gps_tracking"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - default
+
+
+
+    
+      
+
+  mosquitto:
+    image: eclipse-mosquitto:2-openssl
+    container_name: gps_mosquitto
+    ports:
+      - "1883:1883"
+    volumes:
+      - ./docker/mosquitto.conf:/mosquitto/config/mosquitto.conf
+    healthcheck:
+      test: ["CMD", "mosquitto_sub", "-t", "test", "-C", "1", "-i", "healthcheck", "-W", "2"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - iot_net
+
+
+
+  backend:
+    build: ./src/backend
+    container_name: gps_backend
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL: postgresql://tracker:tracker123@postgres:5432/gps_tracking
+      MQTT_BROKER: mosquitto
+      MQTT_PORT: 1883
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: on-failure
+    networks:
+      - default
+
+
+
+
+  frontend:
+    image: nginx:alpine
+    container_name: gps_frontend
+    ports:
+      - "3000:80"
+    volumes:
+      - ./src/frontend/index.html:/usr/share/nginx/html/index.html
+    depends_on:
+      - backend
+    networks:
+      - iot_net
+
+  # ── Thread Nodes Simulator ────────────────────────────────────────────────────
+  thread_leader:
+    build:
+      context: ./src/thread_nodes/leader
+      dockerfile: Dockerfile
+    container_name: thread_leader
+    environment:
+      NODE_ROLE: leader
+      NODE_ID: "1"
+      IPV6_ADDR: "fd00:db8::9"
+    networks:
+      iot_net:
+        ipv6_address: "fd00:db8::9"
+    command: python node_leader.py
+
+  thread_router:
+    build:
+      context: ./src/thread_nodes/router
+      dockerfile: Dockerfile
+    container_name: thread_router
+    environment:
+      NODE_ROLE: router
+      NODE_ID: "2"
+      IPV6_ADDR: "fd00:db8::2"
+    networks:
+      iot_net:
+        ipv6_address: "fd00:db8::2"
+    command: python node_router.py
+
+  thread_gps:
+    build:
+      context: ./src/thread_nodes/gps
+      dockerfile: Dockerfile
+    container_name: thread_gps
+    environment:
+      NODE_ROLE: end_device
+      NODE_TYPE: gps
+      NODE_ID: "3"
+      IPV6_ADDR: "fd00:db8::3"
+      COAP_PORT: "5683"
+    ports:
+      - "5683:5683/udp"
+    networks:
+      iot_net:
+        ipv6_address: "fd00:db8::3"
+    command: python node_gps.py
+
+  thread_battery:
+    build:
+      context: ./src/thread_nodes/battery
+      dockerfile: Dockerfile
+    container_name: thread_battery
+    environment:
+      NODE_ROLE: end_device
+      NODE_TYPE: battery
+      NODE_ID: "4"
+      IPV6_ADDR: "fd00:db8::4"
+      COAP_PORT: "5684"
+    ports:
+      - "5684:5684/udp"
+    networks:
+      iot_net:
+        ipv6_address: "fd00:db8::4"
+    command: python node_battery.py
+
+  thread_temp:
+    build:
+      context: ./src/thread_nodes/temperature
+      dockerfile: Dockerfile
+    container_name: thread_temp
+    environment:
+      NODE_ROLE: end_device
+      NODE_TYPE: temperature
+      NODE_ID: "5"
+      IPV6_ADDR: "fd00:db8::5"
+      COAP_PORT: "5685"
+    ports:
+      - "5685:5685/udp"
+    networks:
+      iot_net:
+        ipv6_address: "fd00:db8::5"
+    command: python node_temperature.py
+networks:
+  iot_net:
+    driver: bridge
+    enable_ipv6: true
+    ipam:
+      config:
+        - subnet: "172.34.0.0/16"
+        - subnet: "fd00:db8::/64"
+
+
+
+volumes:
+  postgres_data:
