@@ -2,7 +2,8 @@
 
 ## ▶️ Lancer le projet (5 commandes)
 
-```bash
+```
+bash
 ## ▶️ Lancer le projet
 
 Suivez ces étapes simples pour démarrer le projet en local :
