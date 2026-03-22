@@ -1,14 +1,13 @@
 # 🛰️ Thread GPS Tracking Platform
 
 ## ▶️ Lancer le projet (5 commandes)
-
+---
 ```
 bash
 ## ▶️ Lancer le projet
 
 Suivez ces étapes simples pour démarrer le projet en local :
 
-```bash
 # Créer un dossier pour le projet
 mkdir GPS-Tracking
 
