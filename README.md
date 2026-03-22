@@ -95,16 +95,17 @@ Puis ouvrir : **http://localhost:3000**
 │
 └───tests
         test_all.py
----
+```
 
 ## 🔌 Services
-
+```
 | Service | URL | Rôle |
 |---------|-----|------|
 | WebUI | http://localhost:3000 | Interface utilisateur |
 | API + Docs | http://localhost:8000/docs | FastAPI Swagger |
 | PostgreSQL | localhost:5432 | Base de données |
 | MQTT | localhost:1883 | Broker Mosquitto |
+```
 
 <img width="945" height="370" alt="Image" src="https://github.com/user-attachments/assets/4299631a-53a0-4ae8-8765-b5cace0c686f" />
 
@@ -112,10 +113,10 @@ Puis ouvrir : **http://localhost:3000**
 
 
 <img width="945" height="303" alt="Image" src="https://github.com/user-attachments/assets/37079517-6265-44e1-a0a0-64f3fc473e7a" />
----
+
 
 ## 🌐 Réseau Thread IPv6 simulé
-
+```
 | Rôle | Adresse IPv6 | Ressource CoAP |
 |------|-------------|----------------|
 | Leader | fd00:db8::1 | — |
@@ -123,12 +124,12 @@ Puis ouvrir : **http://localhost:3000**
 | End Device GPS | fd00:db8::10 | coap://[fd00:db8::10]:5683/gps |
 | End Device Batterie | fd00:db8::11 | coap://[fd00:db8::11]:5683/battery |
 | End Device Température | fd00:db8::12 | coap://[fd00:db8::12]:5683/temperature |
+```
 
 
 <img width="945" height="505" alt="Image" src="https://github.com/user-attachments/assets/41d0d035-891e-4e73-80c2-6c88e207b6ae" />
 
 
----
 
 ## 📊 Flux de données
 
@@ -138,10 +139,9 @@ Flux 2 : FastAPI → GET coap://[fd00:db8::10]:5683/gps (simulé)
 Flux 3 : FastAPI → MQTT /tracking/{id}/gps → Mosquitto
 ```
 
----
 
 ## ✅ Validation des plages
-
+```
 | Capteur | Plage |
 |---------|-------|
 | GPS Latitude | [-90, 90]° |
@@ -155,7 +155,8 @@ Flux 3 : FastAPI → MQTT /tracking/{id}/gps → Mosquitto
 
 ## 🧪 Tests rapides
 
-```bash
+```
+bash
 # Health check
 curl http://localhost:8000/health
 
@@ -171,13 +172,11 @@ curl -X POST http://localhost:8000/api/sessions \
 
 # Poll CoAP (simule lecture des 3 noeuds Thread)
 curl -X POST http://localhost:8000/api/coap/poll/1
+```
 
 <img width="945" height="330" alt="Image" src="https://github.com/user-attachments/assets/877968c9-f9c0-4b07-a49e-8d23e684fd04" />
 
 
-```
-
----
 
 ## 🏗️ Justification PostgreSQL
 
