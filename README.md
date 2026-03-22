@@ -18,7 +18,7 @@ cd GPS-Tracking
 git clone https://github.com/ELMOUWAHID-AYOUB/IoT-live-monitoring.git
 
 # Entrer dans le projet cloné
-cd IoT-live-monitoring
+cd IoT-live-monitoring-GPS-Tracking
 
 # Lancer l'application avec Docker
 docker-compose up --build
