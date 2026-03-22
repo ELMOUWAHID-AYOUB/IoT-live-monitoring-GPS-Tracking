@@ -61,8 +61,7 @@ Puis ouvrir : **http://localhost:3000**
 │   │               polling_service.py
 │   │               validation.py
 │   │
-│   ├───docker
-│   │   └───mosquitto.conf
+│   │
 │   ├───frontend
 │   │       Dockerfile
 │   │       index.html
