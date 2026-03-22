@@ -31,7 +31,70 @@ Puis ouvrir : **http://localhost:3000**
 ## 📁 Structure
 
 ```
-
+├───docker-compose.yml
+├───README.md
+│
+├───docker
+│   ├───mosquitto.conf
+│
+├───src
+│   ├───backend
+│   │   │   Dockerfile
+│   │   │   main.py
+│   │   │   requirements.txt
+│   │   │
+│   │   └───app
+│   │       │   database.py
+│   │       │   main.py
+│   │       │   requirements.txt
+│   │       │
+│   │       ├───routers
+│   │       │       measurements.py
+│   │       │       network.py
+│   │       │       runners.py
+│   │       │       sessions.py
+│   │       │
+│   │       └───services
+│   │               coap_service.py
+│   │               haversine.py
+│   │               mqtt_service.py
+│   │               polling_service.py
+│   │               validation.py
+│   │
+│   ├───docker
+│   │   └───mosquitto.conf
+│   ├───frontend
+│   │       Dockerfile
+│   │       index.html
+│   │
+│   └───thread_nodes
+│       ├───battery
+│       │       Dockerfile
+│       │       node_battery.py
+│       │       requirements.txt
+│       │
+│       ├───gps
+│       │       Dockerfile
+│       │       node_gps.py
+│       │       requirements.txt
+│       │
+│       ├───leader
+│       │       Dockerfile
+│       │       node_leader.py
+│       │       requirements.txt
+│       │
+│       ├───router
+│       │       Dockerfile
+│       │       node_router.py
+│       │       requirements.txt
+│       │
+│       └───temperature
+│               Dockerfile
+│               node_temperature.py
+│               requirements.txt
+│
+└───tests
+        test_all.py
 ---
 
 ## 🔌 Services
@@ -113,70 +176,7 @@ curl -X POST http://localhost:8000/api/coap/poll/1
 
 
 ```
-├───docker-compose.yml
-├───README.md
-│
-├───docker
-│   ├───mosquitto.conf
-│
-├───src
-│   ├───backend
-│   │   │   Dockerfile
-│   │   │   main.py
-│   │   │   requirements.txt
-│   │   │
-│   │   └───app
-│   │       │   database.py
-│   │       │   main.py
-│   │       │   requirements.txt
-│   │       │
-│   │       ├───routers
-│   │       │       measurements.py
-│   │       │       network.py
-│   │       │       runners.py
-│   │       │       sessions.py
-│   │       │
-│   │       └───services
-│   │               coap_service.py
-│   │               haversine.py
-│   │               mqtt_service.py
-│   │               polling_service.py
-│   │               validation.py
-│   │
-│   ├───docker
-│   │   └───mosquitto.conf
-│   ├───frontend
-│   │       Dockerfile
-│   │       index.html
-│   │
-│   └───thread_nodes
-│       ├───battery
-│       │       Dockerfile
-│       │       node_battery.py
-│       │       requirements.txt
-│       │
-│       ├───gps
-│       │       Dockerfile
-│       │       node_gps.py
-│       │       requirements.txt
-│       │
-│       ├───leader
-│       │       Dockerfile
-│       │       node_leader.py
-│       │       requirements.txt
-│       │
-│       ├───router
-│       │       Dockerfile
-│       │       node_router.py
-│       │       requirements.txt
-│       │
-│       └───temperature
-│               Dockerfile
-│               node_temperature.py
-│               requirements.txt
-│
-└───tests
-        test_all.py
+
 ---
 
 ## 🏗️ Justification PostgreSQL
