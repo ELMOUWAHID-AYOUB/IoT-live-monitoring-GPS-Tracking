@@ -148,10 +148,9 @@ Flux 3 : FastAPI → MQTT /tracking/{id}/gps → Mosquitto
 | GPS Longitude | [-180, 180]° |
 | Batterie | [0, 100]% |
 | Température | [-40, 40]°C |
+```
 
 <img width="945" height="197" alt="Image" src="https://github.com/user-attachments/assets/fb8c8e33-8cb0-45cd-97a7-148c28d72a57" />
-
----
 
 ## 🧪 Tests rapides
 
