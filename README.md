@@ -24,7 +24,26 @@ cd IoT-live-monitoring-GPS-Tracking
 docker-compose up --build
 ```
 
-Puis ouvrir : **http://localhost:3000**
+Ouvrir l’application : **[http://localhost:3000](http://localhost:3000)**
+
+## Étapes d’utilisation
+
+1. **Création du coureur**
+
+   L’utilisateur saisit le nom et l’email du coureur via la WebUI et enregistre le coureur dans la base de données.
+
+2. **Sélection du coureur et démarrage de la session**
+  
+   Après avoir choisi un coureur, l’utilisateur peut démarrer une session de suivi.
+   Cette action initialise la collecte des données des capteurs Thread (GPS, batterie, température) toutes les 4 secondes via CoAP.
+
+3. **Suivi en temps réel**
+   La page de tracking s’ouvre automatiquement et affiche :
+
+   * La position GPS du coureur sur la carte Leaflet.
+   * La distance totale parcourue.
+   * Les mesures en temps réel de la batterie et de la température.
+   * Les logs de session avec chaque mise à jour CoAP.
 
 ---
 
